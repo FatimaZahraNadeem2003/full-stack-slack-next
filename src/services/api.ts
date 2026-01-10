@@ -6,7 +6,7 @@ export interface Message {
   user: string;
   userId: string;
   userRole?: string;
-  spaceId: string;
+  spaceId: string; 
   spaceName: string;
   timestamp: string;
   messageType: string;
@@ -21,6 +21,18 @@ export interface User {
   role: 'user' | 'admin';
   isActive: boolean;
   lastSeen: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notification {
+  id: string;
+  type: 'message' | 'mention' | 'direct_message' | 'system' | 'reaction';
+  title: string;
+  message: string;
+  isRead: boolean;
+  spaceId?: string;
+  conversationId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -122,6 +134,157 @@ export const api = {
     }
   },
 
+  async getNotifications(isRead?: boolean): Promise<ApiResponse<{ 
+    notifications: Notification[]; 
+    pagination: { 
+      total: number; 
+      page: number; 
+      pages: number; 
+      limit: number 
+    } 
+  }>> {
+    try {
+      let url = `${API_BASE_URL}/api/notifications`;
+      if (isRead !== undefined) {
+        url += `?isRead=${isRead}`;
+      }
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { 
+        data: { 
+          notifications: [], 
+          pagination: { total: 0, page: 1, pages: 1, limit: 50 } 
+        }, 
+        error: (error as Error).message 
+      };
+    }
+  },
+
+  async markNotificationAsRead(notificationId: string): Promise<ApiResponse<Notification>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { 
+        data: { 
+          id: '', 
+          type: 'message', 
+          title: '', 
+          message: '', 
+          isRead: false, 
+          createdAt: '', 
+          updatedAt: '' 
+        }, 
+        error: (error as Error).message 
+      };
+    }
+  },
+
+  async markAllNotificationsAsRead(): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { 
+        data: { message: '' }, 
+        error: (error as Error).message 
+      };
+    }
+  },
+
+  async deleteNotification(notificationId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { 
+        data: { message: '' }, 
+        error: (error as Error).message 
+      };
+    }
+  },
+
+  async deleteAllNotifications(): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { 
+        data: { message: '' }, 
+        error: (error as Error).message 
+      };
+    }
+  },
+
+  async joinSpace(spaceId: string): Promise<ApiResponse<{ message: string; spaceId: string }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/spaces/${spaceId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { 
+        data: { message: '', spaceId: '' }, 
+        error: (error as Error).message 
+      };
+    }
+  },
+
   async checkHealth(): Promise<ApiResponse<{ status: string }>> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/health`);
@@ -220,14 +383,33 @@ export const api = {
         }
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       return { data };
     } catch (error) {
       return { data: { spaces: [] }, error: (error as Error).message };
     }
+  },
+
+  async searchUsers(query: string, limit: number = 10): Promise<ApiResponse<{ users: User[] }>> {
+    try {
+      const encodedQuery = encodeURIComponent(query);
+      const response = await fetch(`${API_BASE_URL}/api/users/search?q=${encodedQuery}&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { data: { users: [] }, error: (error as Error).message };
+    }
   }
+
 };
 
 export interface Space {
@@ -258,7 +440,7 @@ export interface AdminSpace {
     email: string;
     role: string;
   }[];
-  admins: string[]; 
+  admins: string[];
   isArchived: boolean;
   lastActivity: string;
   createdAt: string;
@@ -285,3 +467,7 @@ export interface DirectMessageConversation {
   } | null;
   lastActivity: string;
 }
+
+
+
+

@@ -6,7 +6,7 @@ import { Message } from '@/services/api';
 interface SendMessageData {
   content: string;
   spaceId?: string;
-  recipientId?: string;
+  recipientId?: string; 
 }
 
 export const useSocket = () => {
@@ -76,6 +76,12 @@ export const useSocket = () => {
     }
   };
 
+  const subscribeToNewNotification = (callback: (data: any) => void) => {
+    if (socketRef.current) {
+      socketRef.current.on('new_notification', callback);
+    }
+  };
+
   const subscribeToMessageSent = (callback: (data: Message) => void) => {
     if (socketRef.current) {
       socketRef.current.on('message_sent', callback);
@@ -93,7 +99,8 @@ export const useSocket = () => {
     joinDirectMessages, 
     sendMessage,
     subscribeToReceiveMessage,
-    subscribeToReceiveDirectMessage,
+    subscribeToReceiveDirectMessage, 
+    subscribeToNewNotification, 
     subscribeToMessageSent,
     subscribeToErrors,
     isConnected,

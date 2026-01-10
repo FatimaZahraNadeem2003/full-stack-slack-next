@@ -1,24 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from './useSocket';
 import { useAuth } from './useAuth';
-
-interface Notification {
-  id: string;
-  type: 'message' | 'mention' | 'direct_message' | 'system';
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  spaceId?: string;
-  conversationId?: string;
-  userId?: string;
-}
+import { api, Notification as ApiNotification } from '@/services/api';
 
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
-  const { subscribeToReceiveMessage, subscribeToReceiveDirectMessage } = useSocket();
+  const { subscribeToReceiveMessage, subscribeToReceiveDirectMessage, subscribeToNewNotification } = useSocket();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -47,49 +36,63 @@ export const useNotifications = () => {
     (window as any).playNotificationSound = createBeepSound;
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      loadNotifications();
+    }
+  }, [user]);
+
+  const loadNotifications = async () => {
+    const result = await api.getNotifications();
+    if (!result.error) {
+      setNotifications(result.data.notifications);
+      const unread = result.data.notifications.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
+    }
+  };
+
   const playNotificationSound = () => {
     if ((window as any).playNotificationSound) {
       (window as any).playNotificationSound();
     }
   };
 
-  const addNotification = (notification: Omit<Notification, 'id' | 'read' | 'timestamp'>) => {
-    const newNotification: Notification = {
-      id: Math.random().toString(36).substring(2, 9),
-      ...notification,
-      timestamp: new Date().toISOString(),
-      read: false
-    };
-
-    setNotifications(prev => [newNotification, ...prev]);
-    setUnreadCount(prev => prev + 1);
-    playNotificationSound(); 
+  const markAsRead = async (id: string) => {
+    const result = await api.markNotificationAsRead(id);
+    if (!result.error) {
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === id ? { ...notification, isRead: true } : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const markAllAsRead = async () => {
+    const result = await api.markAllNotificationsAsRead();
+    if (!result.error) {
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, isRead: true }))
+      );
+      setUnreadCount(0);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-    setUnreadCount(0);
+  const removeNotification = async (id: string) => {
+    const result = await api.deleteNotification(id);
+    if (!result.error) {
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
   };
 
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    setUnreadCount(0);
+  const clearAllNotifications = async () => {
+    const result = await api.deleteAllNotifications();
+    if (!result.error) {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
   };
 
   useEffect(() => {
@@ -99,44 +102,45 @@ export const useNotifications = () => {
       const isMention = data.content.toLowerCase().includes(`@${user.username.toLowerCase()}`);
       
       if (isMention) {
-        addNotification({
-          type: 'mention',
-          title: `@${data.user} mentioned you`,
-          message: data.content,
-          spaceId: data.spaceId
-        });
       } else if (data.userId !== user.id) {
-        addNotification({
-          type: 'message',
-          title: `New message in #${data.spaceName}`,
-          message: `${data.user}: ${data.content}`,
-          spaceId: data.spaceId
-        });
       }
     };
 
     const handleDirectMessage = (data: any) => {
       if (data.userId !== user.id) {
-        addNotification({
-          type: 'direct_message',
-          title: `Direct message from ${data.user}`,
-          message: data.content,
-          conversationId: data.spaceId
-        });
+      }
+    };
+
+    const handleNewNotification = (data: any) => {
+      setNotifications(prev => [{
+        id: data.id,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        isRead: data.isRead,
+        createdAt: data.timestamp || data.createdAt,
+        updatedAt: data.timestamp || data.createdAt,
+        spaceId: data.spaceId,
+        conversationId: data.conversationId
+      }, ...prev]);
+      
+      if (!data.isRead) {
+        setUnreadCount(prev => prev + 1);
+        playNotificationSound();
       }
     };
 
     subscribeToReceiveMessage(handleMessage);
     subscribeToReceiveDirectMessage(handleDirectMessage);
+    subscribeToNewNotification(handleNewNotification);
 
     return () => {
     };
-  }, [user, subscribeToReceiveMessage, subscribeToReceiveDirectMessage]);
+  }, [user, subscribeToReceiveMessage, subscribeToReceiveDirectMessage, subscribeToNewNotification]);
 
   return {
     notifications,
     unreadCount,
-    addNotification,
     markAsRead,
     markAllAsRead,
     removeNotification,
