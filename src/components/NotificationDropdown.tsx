@@ -178,7 +178,6 @@ const NotificationDropdown: React.FC = () => {
         </div>
       )}
 
-      {/* Backdrop when dropdown is open */}
       {isOpen && (
         <div 
           className="fixed inset-0 z-40 sm:hidden" 

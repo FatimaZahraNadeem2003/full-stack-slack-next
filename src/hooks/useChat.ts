@@ -111,6 +111,25 @@ export const useChat = (spaceId: string = 'general', isDirectMessage: boolean = 
     }
   };
 
+  const joinSpace = async (targetSpaceId: string) => {
+    setError(null);
+    try {
+      const result = await api.joinSpace(targetSpaceId);
+      if (result.error) {
+        setError(result.error);
+        console.error('Error joining space:', result.error);
+        return false;
+      } else {
+        console.log('Successfully joined space:', result.data.message);
+        return true;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error joining space:', err);
+      return false;
+    }
+  };
+
   return {
     messages,
     isLoading,
@@ -118,5 +137,6 @@ export const useChat = (spaceId: string = 'general', isDirectMessage: boolean = 
     loadMessages,
     sendMessage,
     isConnected,
+    joinSpace,
   };
 };
