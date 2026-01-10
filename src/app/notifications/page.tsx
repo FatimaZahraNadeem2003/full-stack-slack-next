@@ -158,7 +158,7 @@ const NotificationsPage = () => {
                   <div 
                     key={notification.id} 
                     className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                      !notification.read 
+                      !notification.isRead 
                         ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
                         : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`}
@@ -169,7 +169,7 @@ const NotificationsPage = () => {
                       <div className="ml-4 flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className={`text-sm font-medium ${
-                            !notification.read ? 'text-gray-900' : 'text-gray-700'
+                            !notification.isRead ? 'text-gray-900' : 'text-gray-700'
                           }`}>
                             {notification.title}
                           </p>
@@ -186,9 +186,9 @@ const NotificationsPage = () => {
                           </button>
                         </div>
                         <p className="mt-1 text-sm text-gray-600 truncate">{notification.message}</p>
-                        <p className="mt-1 text-xs text-gray-500">{formatTime(notification.timestamp)}</p>
+                        <p className="mt-1 text-xs text-gray-500">{formatTime(notification.createdAt)}</p>
                       </div>
-                      {!notification.read && (
+                      {!notification.isRead && (
                         <div className="ml-4 flex-shrink-0">
                           <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block"></span>
                         </div>

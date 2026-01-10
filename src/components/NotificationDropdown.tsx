@@ -142,7 +142,7 @@ const NotificationDropdown: React.FC = () => {
                 {notifications.map((notification) => (
                   <li 
                     key={notification.id} 
-                    className={`p-4 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
+                    className={`p-4 hover:bg-gray-50 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start">
@@ -150,7 +150,7 @@ const NotificationDropdown: React.FC = () => {
                       <div className="ml-3 flex-1">
                         <p className="text-sm font-medium text-gray-900">{notification.title}</p>
                         <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
-                        <p className="mt-1 text-xs text-gray-500">{formatTime(notification.timestamp)}</p>
+                        <p className="mt-1 text-xs text-gray-500">{formatTime(notification.createdAt)}</p>
                       </div>
                       <button 
                         onClick={(e) => {
