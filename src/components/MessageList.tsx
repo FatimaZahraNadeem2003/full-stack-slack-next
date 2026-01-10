@@ -5,9 +5,10 @@ interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   error: string | null;
+  currentUserId?: string;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error, currentUserId }) => {
   const { user } = useAuth();
 
   return (
@@ -21,11 +22,11 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error })
           {messages.map((msg) => (
             <div 
               key={msg.id} 
-              className={`flex ${msg.user === user?.username ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${msg.user === user?.username ? 'order-2' : 'order-1'}`}>
+              <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${msg.userId === currentUserId ? 'order-2' : 'order-1'}`}>
                 <div className="flex items-center mb-1">
-                  <span className={`text-xs font-semibold ${msg.user === user?.username ? 'text-right' : 'text-left'} ${(msg.user === user?.username ? 'text-indigo-600' : 'text-gray-600')}`}>
+                  <span className={`text-xs font-semibold ${msg.userId === currentUserId ? 'text-right' : 'text-left'} ${(msg.userId === currentUserId ? 'text-indigo-600' : 'text-gray-600')}`}>
                     {msg.user}
                     {msg.userRole && msg.userRole !== 'user' && (
                       <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -39,16 +40,16 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error })
                   </span>
                 </div>
                 <div className={`px-4 py-2 rounded-2xl ${
-                  msg.user === user?.username 
+                  msg.userId === currentUserId 
                     ? 'bg-indigo-500 text-white rounded-tr-none' 
                     : 'bg-gray-100 text-gray-800 rounded-tl-none'
                 }`}>
                   <p className="text-sm">{msg.content}</p>
                 </div>
               </div>
-              <div className={`flex-shrink-0 ${msg.user === user?.username ? 'order-1 ml-2' : 'order-2 mr-2'}`}>
+              <div className={`flex-shrink-0 ${msg.userId === currentUserId ? 'order-1 ml-2' : 'order-2 mr-2'}`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  msg.user === user?.username ? 'bg-indigo-200' : 'bg-gray-200'
+                  msg.userId === currentUserId ? 'bg-indigo-200' : 'bg-gray-200'
                 }`}>
                   <span className="text-xs font-medium text-gray-700">
                     {msg.user.charAt(0).toUpperCase()}

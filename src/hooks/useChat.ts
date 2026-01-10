@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { api, Message } from '@/services/api';
 import { useSocket } from './useSocket';
 
-export const useChat = (spaceId: string = 'general') => {
+export const useChat = (spaceId: string = 'general', isDirectMessage: boolean = false) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +13,8 @@ export const useChat = (spaceId: string = 'general') => {
     subscribeToMessageSent,
     subscribeToErrors,
     isConnected,
-    joinSpaces
+    joinSpaces,
+    subscribeToReceiveDirectMessage
   } = useSocket();
 
   useEffect(() => {
@@ -23,7 +24,14 @@ export const useChat = (spaceId: string = 'general') => {
   const loadMessages = async () => {
     setIsLoading(true);
     setError(null);
-    const result = await api.getMessages(spaceId); 
+    let result;
+    
+    if (isDirectMessage) {
+      result = await api.getDirectMessages(spaceId);
+    } else {
+      result = await api.getMessages(spaceId); 
+    }
+    
     if (result.error) {
       setError(result.error);
       console.error('Error fetching messages:', result.error);
@@ -35,9 +43,12 @@ export const useChat = (spaceId: string = 'general') => {
 
   useEffect(() => {
     if (isConnected && spaceId) {
-      joinSpaces([spaceId]);
+      if (isDirectMessage) {
+      } else {
+        joinSpaces([spaceId]);
+      }
     }
-  }, [isConnected, spaceId]);
+  }, [isConnected, spaceId, isDirectMessage]);
 
   useEffect(() => {
     const receiveMessageCallback = (data: Message) => {
@@ -56,23 +67,39 @@ export const useChat = (spaceId: string = 'general') => {
       setError(error.message);
     };
 
-    subscribeToReceiveMessage(receiveMessageCallback);
+    if (isDirectMessage) {
+      subscribeToReceiveDirectMessage(receiveMessageCallback);
+    } else {
+      subscribeToReceiveMessage(receiveMessageCallback);
+    }
+    
     subscribeToMessageSent(messageSentCallback);
     subscribeToErrors(errorCallback);
 
     return () => {
       setError(null);
     };
-  }, [spaceId]);
+  }, [spaceId, isDirectMessage]);
 
   const sendMessage = async (content: string) => {
     setError(null);
     
     if (isConnected) {
-      sendSocketMessage({ content, spaceId });
+      if (isDirectMessage) {
+        sendSocketMessage({ content, spaceId });
+      } else {
+        sendSocketMessage({ content, spaceId });
+      }
       return true;
     } else {
-      const result = await api.sendMessage(content, spaceId);
+      let result;
+      
+      if (isDirectMessage) {
+        result = await api.sendMessage(content, spaceId);
+      } else {
+        result = await api.sendMessage(content, spaceId);
+      }
+      
       if (result.error) {
         setError(result.error);
         console.error('Error sending message:', result.error);
