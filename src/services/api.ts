@@ -20,9 +20,9 @@ export interface ApiResponse<T> {
 }
 
 export const api = {
-  async getMessages(): Promise<ApiResponse<{ messages: Message[] }>> {
+  async getMessages(spaceId: string = 'general'): Promise<ApiResponse<{ messages: Message[] }>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/messages`);
+      const response = await fetch(`${API_BASE_URL}/api/messages?space=${spaceId}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

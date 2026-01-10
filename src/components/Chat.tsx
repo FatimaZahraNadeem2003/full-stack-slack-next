@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 
 const Chat = () => {
   const [newMessage, setNewMessage] = useState('');
-  const { messages, isLoading, error, sendMessage } = useChat();
+  const { messages, isLoading, error, sendMessage, isConnected } = useChat();
   const { user, logout } = useAuth();
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -16,6 +16,13 @@ const Chat = () => {
       setNewMessage('');
     }
   };
+
+  useEffect(() => {
+    const messagesContainer = document.querySelector('.overflow-y-auto');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }, [messages]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
@@ -32,6 +39,14 @@ const Chat = () => {
             </div>
             <div className="flex items-center">
               <div className="flex items-center space-x-4">
+                {/* Connection status indicator */}
+                <div className="flex items-center">
+                  <div className={`h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-xs text-gray-500">
+                    {isConnected ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+                
                 {user && (
                   <div className="flex items-center space-x-2">
                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
