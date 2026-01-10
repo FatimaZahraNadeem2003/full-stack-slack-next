@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, Space } from '@/services/api';
 import { useDirectMessages } from '@/hooks/useDirectMessages';
+import { useUserSearch } from '@/hooks/useUserSearch';
 
 interface ChatSidebarProps {
   onSpaceSelect: (spaceId: string, type: string) => void;
@@ -14,10 +15,24 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onSpaceSelect, currentUserId,
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { conversations } = useDirectMessages();
+  const { users: searchedUsers, loading: searchingUsers, error: userSearchError, searchUsers } = useUserSearch();
 
   useEffect(() => {
     loadSpaces();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() && searchTerm.length > 1) {
+      const isChannelSearch = searchTerm.startsWith('#');
+      if (!isChannelSearch) {
+        searchUsers(searchTerm);
+      }
+    } else {
+      if (!searchTerm.startsWith('#')) {
+        searchUsers('');
+      }
+    }
+  }, [searchTerm, searchUsers]);
 
   const loadSpaces = async () => {
     setLoading(true);
@@ -79,6 +94,17 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onSpaceSelect, currentUserId,
     conversation.otherUser?.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const startDirectMessage = async (userId: string) => {
+    try {
+      const result = await api.sendDirectMessage('', userId);
+      if (!result.error && result.data.spaceId) {
+        onSpaceSelect(result.data.spaceId, 'direct');
+      }
+    } catch (err) {
+      console.error('Error starting direct message:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200 w-full">
       <div className="p-4 border-b border-gray-200">
@@ -99,6 +125,30 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onSpaceSelect, currentUserId,
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        {searchTerm && !searchTerm.startsWith('#') && searchedUsers.length > 0 && (
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Users</h2>
+            <ul className="space-y-1">
+              {searchedUsers.map((user) => (
+                <li key={user.id}>
+                  <button
+                    onClick={() => startDirectMessage(user.id)}
+                    className="w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors hover:bg-gray-100 text-gray-700"
+                  >
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <span className="text-xs font-medium text-indigo-600">
+                        {getInitials(user.username)}
+                      </span>
+                    </div>
+                    <span className="ml-2 truncate">{user.username}</span>
+                    <span className="ml-auto text-xs text-gray-500">Start DM</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Channels</h2>

@@ -27,7 +27,7 @@ export default function Home() {
             <div className="flex justify-end mb-4">
               <NotificationDropdown />
             </div>
-            <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Welcome to Slack Clone</h1>
+            <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Welcome to Slack  .</h1>
             <Login />
             <div className="mt-6 text-center">
               <p className="text-gray-600">Don't have an account?</p>
