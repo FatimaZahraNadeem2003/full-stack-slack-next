@@ -5,6 +5,7 @@ import ChatSidebar from './ChatSidebar';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import Link from 'next/link';
+import NotificationDropdown from './NotificationDropdown';
 
 const Chat = () => {
   const [newMessage, setNewMessage] = useState('');
@@ -28,11 +29,13 @@ const Chat = () => {
   const handleSpaceSelect = (spaceId: string, type: string) => {
     setSelectedSpace(spaceId);
     setIsDirectMessage(type === 'direct');
+    // On mobile, close sidebar after selecting a space
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
   };
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -41,16 +44,19 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Toggle sidebar on mobile
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col">
+      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
+              {/* Mobile menu button */}
               <button
                 onClick={toggleSidebar}
                 className="md:hidden mr-2 text-gray-500 hover:text-gray-700"
@@ -67,6 +73,7 @@ const Chat = () => {
                 <span className="ml-2 text-xl font-bold text-gray-900 hidden sm:block">Slack Clone</span>
               </div>
               
+              {/* Space name on mobile */}
               <div className="ml-4 md:hidden">
                 <h2 className="text-sm font-semibold text-gray-800 capitalize">
                   {selectedSpace === 'general' ? 'General' : selectedSpace.replace(/-/g, ' ')}
@@ -81,6 +88,7 @@ const Chat = () => {
               <Link href="/direct-messages" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 hidden md:inline-block">
                 Direct Messages
               </Link>
+              <NotificationDropdown />
               <div className="ml-3 relative">
                 <div className="flex items-center space-x-3">
                   <span className="text-sm font-medium text-gray-700 hidden md:inline-block">{user?.username}</span>
@@ -98,6 +106,7 @@ const Chat = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - collapsible on mobile */}
         <div className={`${sidebarOpen ? 'block' : 'hidden'} md:block absolute md:relative z-20 inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white border-r border-gray-200`}>
           <ChatSidebar 
             onSpaceSelect={handleSpaceSelect} 
@@ -105,6 +114,7 @@ const Chat = () => {
             selectedSpace={selectedSpace}
           />
           
+          {/* Close button for mobile */}
           <button
             onClick={toggleSidebar}
             className="md:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
@@ -115,6 +125,7 @@ const Chat = () => {
           </button>
         </div>
 
+        {/* Overlay for mobile sidebar */}
         {sidebarOpen && (
           <div 
             className="md:hidden fixed inset-0 z-10 bg-black bg-opacity-50"
@@ -122,6 +133,7 @@ const Chat = () => {
           ></div>
         )}
 
+        {/* Main chat area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="bg-white border-b border-gray-200 p-4 hidden md:block">
             <div className="flex items-center justify-between">
@@ -137,10 +149,12 @@ const Chat = () => {
                 <Link href="/direct-messages" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
                   Direct Messages
                 </Link>
+                <NotificationDropdown />
               </div>
             </div>
           </div>
 
+          {/* Messages container */}
           <div className="flex-1 overflow-y-auto bg-gray-50">
             <MessageList 
               messages={messages} 

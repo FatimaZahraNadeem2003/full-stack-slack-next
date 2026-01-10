@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDirectMessages } from '@/hooks/useDirectMessages';
 import { User as ApiUser } from '@/services/api';
+import NotificationDropdown from './NotificationDropdown';
 
 interface User {
   id: string;
@@ -32,7 +33,6 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -119,7 +119,7 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <div className="flex items-center">
+        <div className="flex items-center flex-1">
           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
             <span className="text-sm font-medium text-indigo-600">
               {getInitials(otherUser?.username || '')}
@@ -140,6 +140,9 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
               )}
             </p>
           </div>
+        </div>
+        <div className="ml-auto">
+          <NotificationDropdown />
         </div>
       </div>
 

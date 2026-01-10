@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import Chat from '@/components/Chat';
 import Login from '@/components/Login';
-import Register from '@/components/Register';
+import NotificationDropdown from '@/components/NotificationDropdown';
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -24,6 +24,9 @@ export default function Home() {
       {!user ? (
         <div className="container mx-auto px-4 py-8 max-w-md">
           <div className="bg-white rounded-xl shadow-md p-8">
+            <div className="flex justify-end mb-4">
+              <NotificationDropdown />
+            </div>
             <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Welcome to Slack Clone</h1>
             <Login />
             <div className="mt-6 text-center">
