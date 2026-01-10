@@ -5,7 +5,8 @@ import { Message } from '@/services/api';
 
 interface SendMessageData {
   content: string;
-  spaceId: string;
+  spaceId?: string;
+  recipientId?: string;
 }
 
 export const useSocket = () => {
@@ -14,6 +15,8 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return; 
+    
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -49,6 +52,12 @@ export const useSocket = () => {
     }
   };
 
+  const joinDirectMessages = (userIds: string[]) => {
+    if (socketRef.current) {
+      socketRef.current.emit('join_direct_messages', userIds);
+    }
+  };
+
   const sendMessage = (data: SendMessageData) => {
     if (socketRef.current) {
       socketRef.current.emit('send_message', data);
@@ -58,6 +67,12 @@ export const useSocket = () => {
   const subscribeToReceiveMessage = (callback: (data: Message) => void) => {
     if (socketRef.current) {
       socketRef.current.on('receive_message', callback);
+    }
+  };
+
+  const subscribeToReceiveDirectMessage = (callback: (data: Message) => void) => {
+    if (socketRef.current) {
+      socketRef.current.on('receive_direct_message', callback);
     }
   };
 
@@ -75,8 +90,10 @@ export const useSocket = () => {
 
   return {
     joinSpaces,
+    joinDirectMessages, 
     sendMessage,
     subscribeToReceiveMessage,
+    subscribeToReceiveDirectMessage,
     subscribeToMessageSent,
     subscribeToErrors,
     isConnected,

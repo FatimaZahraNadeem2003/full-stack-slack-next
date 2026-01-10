@@ -1,4 +1,3 @@
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface Message {
@@ -67,6 +66,62 @@ export const api = {
     }
   },
 
+  async sendDirectMessage(content: string, recipientId: string): Promise<ApiResponse<Message>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/direct-messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ content, recipientId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { data: { id: '', content: '', user: '', userId: '', spaceId: '', spaceName: '', timestamp: '', messageType: '', isEdited: false, isDeleted: false }, error: (error as Error).message };
+    }
+  },
+
+  async getDirectMessageConversations(): Promise<ApiResponse<{ conversations: DirectMessageConversation[] }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/direct-messages/conversations`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { data: { conversations: [] }, error: (error as Error).message };
+    }
+  },
+
+  async getDirectMessages(conversationId: string): Promise<ApiResponse<{ messages: Message[] }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/direct-messages/${conversationId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return { data: { messages: [] }, error: (error as Error).message };
+    }
+  },
+
   async checkHealth(): Promise<ApiResponse<{ status: string }>> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/health`);
@@ -119,7 +174,6 @@ export const api = {
     }
   },
 
-  // Admin-specific API methods
   async getUsers(): Promise<ApiResponse<{ users: User[] }>> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
@@ -204,9 +258,30 @@ export interface AdminSpace {
     email: string;
     role: string;
   }[];
-  admins: string[]; // Array of user IDs who are admins
+  admins: string[]; 
   isArchived: boolean;
   lastActivity: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DirectMessageConversation {
+  id: string;
+  spaceName: string;
+  type: string;
+  participants: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    avatar: string;
+  }[];
+  otherUser: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    avatar: string;
+  } | null;
+  lastActivity: string;
 }

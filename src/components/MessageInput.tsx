@@ -4,6 +4,7 @@ interface MessageInputProps {
   setNewMessage: (message: string) => void;
   isLoading: boolean;
   messageCount: number;
+  isConnected?: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ 
@@ -11,7 +12,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   handleSendMessage, 
   setNewMessage, 
   isLoading, 
-  messageCount 
+  messageCount,
+  isConnected = true
 }) => {
   return (
     <div className="border-t border-gray-200 p-4">
@@ -41,7 +43,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         </button>
       </form>
       <div className="mt-2 text-xs text-gray-500 flex justify-between">
-        <span>Press Enter to send</span>
+        <span>{isConnected ? 'Connected' : 'Offline - messages will be sent when online'} | Press Enter to send</span>
         <span>{messageCount} messages in this channel</span>
       </div>
     </div>
