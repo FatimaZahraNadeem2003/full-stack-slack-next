@@ -51,7 +51,8 @@ export const useAuth = () => {
         try {
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
           }
         } catch (err) {
           console.error('Error initializing auth:', err);
@@ -131,5 +132,7 @@ export const useAuth = () => {
     register,
     logout,
     isAuthenticated: !!user,
+    token: localStorage.getItem('token'),
+    isAdmin: user?.role === 'admin',
   };
 };

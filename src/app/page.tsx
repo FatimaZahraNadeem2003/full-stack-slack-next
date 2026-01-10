@@ -151,7 +151,7 @@ export default function Home() {
         </div>
         
         <div className="text-center text-xs text-gray-500">
-          <p>© 2026 Slack Clone. All rights reserved.</p>
+          <p>© 2026 Slack  . All rights reserved.</p>
         </div>
       </div>
     </div>

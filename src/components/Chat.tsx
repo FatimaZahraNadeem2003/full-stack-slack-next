@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 const Chat = () => {
   const [newMessage, setNewMessage] = useState('');
   const { messages, isLoading, error, sendMessage, isConnected } = useChat();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,8 +55,26 @@ const Chat = () => {
                       </span>
                     </div>
                     <span className="text-sm font-medium text-gray-700">{user.username}</span>
+                    {isAdmin && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Admin
+                      </span>
+                    )}
                   </div>
                 )}
+                
+                {isAdmin && (
+                  <a
+                    href="/admin"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                  >
+                    <svg className="-ml-0.5 mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                    </svg>
+                    Admin
+                  </a>
+                )}
+                
                 <button
                   onClick={logout}
                   className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
@@ -123,6 +141,25 @@ const Chat = () => {
                   </a>
                 </li>
               </ul>
+              
+              {isAdmin && (
+                <>
+                  <h3 className="text-md font-medium text-gray-900 mt-6 mb-3">Admin Actions</h3>
+                  <ul className="space-y-2">
+                    <li>
+                      <a 
+                        href="/admin" 
+                        className="flex items-center p-2 text-sm text-gray-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-700"
+                      >
+                        <svg className="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                        </svg>
+                        Admin Dashboard
+                      </a>
+                    </li>
+                  </ul>
+                </>
+              )}
             </div>
           </div>
 
@@ -160,6 +197,11 @@ const Chat = () => {
                           <div className="flex items-center mb-1">
                             <span className={`text-xs font-semibold ${msg.user === user?.username ? 'text-right' : 'text-left'} ${(msg.user === user?.username ? 'text-indigo-600' : 'text-gray-600')}`}>
                               {msg.user}
+                              {msg.userRole && msg.userRole !== 'user' && (
+                                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  {msg.userRole}
+                                </span>
+                              )}
                             </span>
                             <span className="mx-2 text-gray-400">•</span>
                             <span className="text-xs text-gray-500">
