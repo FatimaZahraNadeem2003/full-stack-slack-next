@@ -11,54 +11,108 @@ interface MessageListProps {
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error, currentUserId }) => {
   const { user } = useAuth();
 
+  const groupedMessages = messages.reduce((acc, message) => {
+    const date = new Date(message.timestamp).toLocaleDateString();
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(message);
+    return acc;
+  }, {} as Record<string, Message[]>);
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: 'calc(100vh - 350px)' }}>
+    <div className="flex-1 overflow-y-auto p-4 space-y-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500"></div>
         </div>
       ) : messages.length > 0 ? (
-        <div className="space-y-4">
-          {messages.map((msg) => (
-            <div 
-              key={msg.id} 
-              className={`flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${msg.userId === currentUserId ? 'order-2' : 'order-1'}`}>
-                <div className="flex items-center mb-1">
-                  <span className={`text-xs font-semibold ${msg.userId === currentUserId ? 'text-right' : 'text-left'} ${(msg.userId === currentUserId ? 'text-indigo-600' : 'text-gray-600')}`}>
-                    {msg.user}
-                    {msg.userRole && msg.userRole !== 'user' && (
-                      <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        {msg.userRole}
-                      </span>
-                    )}
-                  </span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                <div className={`px-4 py-2 rounded-2xl ${
-                  msg.userId === currentUserId 
-                    ? 'bg-indigo-500 text-white rounded-tr-none' 
-                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                }`}>
-                  <p className="text-sm">{msg.content}</p>
-                </div>
-              </div>
-              <div className={`flex-shrink-0 ${msg.userId === currentUserId ? 'order-1 ml-2' : 'order-2 mr-2'}`}>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  msg.userId === currentUserId ? 'bg-indigo-200' : 'bg-gray-200'
-                }`}>
-                  <span className="text-xs font-medium text-gray-700">
-                    {msg.user.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              </div>
+        Object.entries(groupedMessages).map(([date, dateMessages]) => (
+          <div key={date} className="space-y-4">
+            <div className="flex items-center justify-center my-4">
+              <div className="border-t border-gray-300 flex-grow"></div>
+              <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full mx-2">
+                {formatDate(dateMessages[0].timestamp)}
+              </span>
+              <div className="border-t border-gray-300 flex-grow"></div>
             </div>
-          ))}
-        </div>
+            
+            {dateMessages.map((msg) => (
+              <div 
+                key={msg.id} 
+                className={`flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl ${msg.userId === currentUserId ? 'order-2' : 'order-1'}`}>
+                  {!msg.isDeleted && (
+                    <>
+                      <div className="flex items-center mb-1">
+                        <span className={`text-xs font-semibold ${msg.userId === currentUserId ? 'text-right' : 'text-left'} ${(msg.userId === currentUserId ? 'text-indigo-600' : 'text-gray-600')}`}>
+                          {msg.user}
+                          {msg.userRole && msg.userRole !== 'user' && (
+                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              {msg.userRole}
+                            </span>
+                          )}
+                        </span>
+                        <span className="mx-2 text-gray-400">•</span>
+                        <span className="text-xs text-gray-500">
+                          {formatTime(msg.timestamp)}
+                        </span>
+                      </div>
+                      <div className={`px-4 py-3 rounded-2xl ${
+                        msg.userId === currentUserId 
+                          ? 'bg-indigo-500 text-white rounded-tr-none' 
+                          : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
+                      }`}>
+                        <p className="text-sm">{msg.content}</p>
+                      </div>
+                    </>
+                  )}
+                  
+                  {msg.isDeleted && (
+                    <div className={`px-4 py-2 rounded-2xl ${
+                      msg.userId === currentUserId 
+                        ? 'bg-gray-300 text-gray-500 rounded-tr-none' 
+                        : 'bg-gray-100 text-gray-500 rounded-tl-none'
+                    }`}>
+                      <p className="text-sm italic">Message deleted</p>
+                    </div>
+                  )}
+                </div>
+                {!msg.isDeleted && (
+                  <div className={`flex-shrink-0 ${msg.userId === currentUserId ? 'order-1 ml-2' : 'order-2 mr-2'}`}>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                      msg.userId === currentUserId ? 'bg-indigo-200' : 'bg-gray-200'
+                    }`}>
+                      <span className="text-xs font-medium text-gray-700">
+                        {msg.user.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))
       ) : (
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <svg className="h-16 w-16 text-gray-300 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

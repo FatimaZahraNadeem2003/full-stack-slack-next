@@ -12,6 +12,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onSpaceSelect, currentUserId,
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { conversations } = useDirectMessages();
 
   useEffect(() => {
@@ -70,67 +71,151 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onSpaceSelect, currentUserId,
     }
   };
 
+  const filteredSpaces = spaces.filter(space => 
+    space.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredConversations = conversations.filter(conversation => 
+    conversation.otherUser?.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="w-full md:w-64 bg-white rounded-xl shadow p-4 h-fit">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Channels</h2>
-        {loading ? (
-          <p className="text-sm text-gray-500">Loading spaces...</p>
-        ) : error ? (
-          <p className="text-sm text-red-500">Error: {error}</p>
-        ) : (
-          <ul className="space-y-2">
-            {spaces.map((space) => (
-              <li key={space.id}>
-                <button
-                  onClick={() => onSpaceSelect(space.id, space.type)}
-                  className={`w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors ${
-                    selectedSpace === space.id
-                      ? 'bg-indigo-100 text-indigo-700'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {renderSpaceIcon(space.type)}
-                  <span className="ml-2 truncate">{space.name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="flex flex-col h-full bg-white border-r border-gray-200 w-full">
+      <div className="p-4 border-b border-gray-200">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Search channels, users..."
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Direct Messages</h2>
-        {conversations.length > 0 ? (
-          <ul className="space-y-2">
-            {conversations.map((conversation) => {
-              const otherUser = conversation.otherUser;
-              if (!otherUser) return null;
-              
-              return (
-                <li key={conversation.id}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Channels</h2>
+            <button className="text-indigo-600 hover:text-indigo-800">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+          </div>
+          {loading ? (
+            <p className="text-sm text-gray-500 px-2 py-1">Loading spaces...</p>
+          ) : error ? (
+            <p className="text-sm text-red-500 px-2 py-1">Error: {error}</p>
+          ) : filteredSpaces.length > 0 ? (
+            <ul className="space-y-1">
+              {filteredSpaces.map((space) => (
+                <li key={space.id}>
                   <button
-                    onClick={() => onSpaceSelect(conversation.id, 'direct')}
+                    onClick={() => onSpaceSelect(space.id, space.type)}
                     className={`w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors ${
-                      selectedSpace === conversation.id
+                      selectedSpace === space.id
                         ? 'bg-indigo-100 text-indigo-700'
                         : 'hover:bg-gray-100 text-gray-700'
                     }`}
                   >
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <span className="text-xs font-medium text-indigo-600">
-                        {getInitials(otherUser.username)}
+                    {renderSpaceIcon(space.type)}
+                    <span className="ml-2 truncate">{space.name}</span>
+                    {space.type !== 'public' && (
+                      <span className="ml-auto text-xs text-gray-500">
+                        {space.members.length}
                       </span>
-                    </div>
-                    <span className="ml-2 truncate">{otherUser.username}</span>
+                    )}
                   </button>
                 </li>
-              );
-            })}
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500 px-2 py-1">No channels found</p>
+          )}
+        </div>
+
+        <div className="px-4 py-3 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Direct Messages</h2>
+            <button className="text-indigo-600 hover:text-indigo-800">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+          </div>
+          {filteredConversations.length > 0 ? (
+            <ul className="space-y-1">
+              {filteredConversations.map((conversation) => {
+                const otherUser = conversation.otherUser;
+                if (!otherUser) return null;
+                
+                return (
+                  <li key={conversation.id}>
+                    <button
+                      onClick={() => onSpaceSelect(conversation.id, 'direct')}
+                      className={`w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors ${
+                        selectedSpace === conversation.id
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span className="text-xs font-medium text-indigo-600">
+                          {getInitials(otherUser.username)}
+                        </span>
+                      </div>
+                      <span className="ml-2 truncate">{otherUser.username}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500 px-2 py-1">No direct messages yet</p>
+          )}
+        </div>
+
+        <div className="px-4 py-3 border-t border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Online</h2>
+          <ul className="space-y-2">
+            {conversations
+              .filter(conv => conv.otherUser && conv.otherUser.id !== currentUserId)
+              .slice(0, 5)
+              .map(conv => {
+                if (!conv.otherUser) return null;
+                return (
+                  <li key={conv.otherUser.id} className="flex items-center">
+                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-xs text-green-800">●</span>
+                    </div>
+                    <span className="ml-2 text-sm text-gray-700 truncate">{conv.otherUser.username}</span>
+                  </li>
+                );
+              })}
           </ul>
-        ) : (
-          <p className="text-sm text-gray-500">No direct messages yet</p>
-        )}
+        </div>
+      </div>
+
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+            <span className="text-sm font-medium text-indigo-600">
+              {currentUserId ? currentUserId.charAt(0).toUpperCase() : 'U'}
+            </span>
+          </div>
+          <div className="ml-3 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {currentUserId ? 'You' : 'Guest'}
+            </p>
+            <p className="text-xs text-gray-500">Online</p>
+          </div>
+        </div>
       </div>
     </div>
   );
