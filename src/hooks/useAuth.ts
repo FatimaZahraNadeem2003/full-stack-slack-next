@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from './apiClient';
 
 interface User {
   id: string;
@@ -8,36 +8,7 @@ interface User {
   role?: 'admin' | 'user';
 }
 
-const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-    return Promise.reject(error);
-  }
-);
+const isBrowser = () => typeof window !== 'undefined';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,6 +17,12 @@ export const useAuth = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      if (!isBrowser()) {
+        // If we're on the server, skip initialization
+        setIsLoading(false);
+        return;
+      }
+      
       const token = localStorage.getItem('token');
       if (token) {
         try {
@@ -67,6 +44,11 @@ export const useAuth = () => {
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!isBrowser()) {
+      setError('Authentication is only available in the browser');
+      return { success: false, error: 'Authentication is only available in the browser' };
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -88,6 +70,11 @@ export const useAuth = () => {
   };
 
   const register = async (username: string, email: string, password: string) => {
+    if (!isBrowser()) {
+      setError('Authentication is only available in the browser');
+      return { success: false, error: 'Authentication is only available in the browser' };
+    }
+    
     setIsLoading(true);
     setError(null);
 
@@ -119,8 +106,10 @@ export const useAuth = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    if (isBrowser()) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
     setUser(null);
   };
 
@@ -132,7 +121,7 @@ export const useAuth = () => {
     register,
     logout,
     isAuthenticated: !!user,
-    token: localStorage.getItem('token'),
+    token: isBrowser() ? localStorage.getItem('token') : null,
     isAdmin: user?.role === 'admin',
   };
 };
