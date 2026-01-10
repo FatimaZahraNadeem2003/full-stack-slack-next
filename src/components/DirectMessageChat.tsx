@@ -32,6 +32,7 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -79,6 +80,34 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  const groupedMessages = messages.reduce((acc, message) => {
+    const date = new Date(message.timestamp).toLocaleDateString();
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(message);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="bg-white border-b border-gray-200 p-4 flex items-center">
@@ -101,7 +130,14 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
               {otherUser?.username}
             </p>
             <p className="text-xs text-gray-500">
-              {isConnected ? 'Online' : 'Offline'}
+              {isConnected ? (
+                <span className="inline-flex items-center">
+                  <span className="flex-shrink-0 w-2 h-2 rounded-full bg-green-400 mr-1"></span>
+                  Online
+                </span>
+              ) : (
+                'Offline'
+              )}
             </p>
           </div>
         </div>
@@ -121,24 +157,47 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
             <p className="mt-1 text-sm text-gray-500">Send a message to start the conversation.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`flex ${message.userId === currentUser?.id ? 'justify-end' : 'justify-start'}`}
-              >
-                <div 
-                  className={`max-w-xs md:max-w-md px-4 py-2 rounded-lg ${
-                    message.userId === currentUser?.id 
-                      ? 'bg-indigo-500 text-white' 
-                      : 'bg-white text-gray-800 border border-gray-200'
-                  }`}
-                >
-                  <p>{message.content}</p>
-                  <div className={`text-xs mt-1 ${message.userId === currentUser?.id ? 'text-indigo-200' : 'text-gray-500'}`}>
-                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
+          <div className="space-y-6">
+            {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+              <div key={date} className="space-y-4">
+                <div className="flex items-center justify-center my-4">
+                  <div className="border-t border-gray-300 flex-grow"></div>
+                  <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full mx-2">
+                    {formatDate(dateMessages[0].timestamp)}
+                  </span>
+                  <div className="border-t border-gray-300 flex-grow"></div>
                 </div>
+                
+                {dateMessages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`flex ${message.userId === currentUser?.id ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div 
+                      className={`max-w-xs sm:max-w-md md:max-w-lg ${message.userId === currentUser?.id ? 'order-2' : 'order-1'}`}
+                    >
+                      <div className={`px-4 py-3 rounded-2xl ${
+                        message.userId === currentUser?.id 
+                          ? 'bg-indigo-500 text-white rounded-tr-none' 
+                          : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
+                      }`}>
+                        <p className="text-sm">{message.content}</p>
+                        <div className={`text-xs mt-1 ${message.userId === currentUser?.id ? 'text-indigo-200' : 'text-gray-500'}`}>
+                          {formatTime(message.timestamp)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`flex-shrink-0 ${message.userId === currentUser?.id ? 'order-1 ml-2' : 'order-2 mr-2'}`}>
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                        message.userId === currentUser?.id ? 'bg-indigo-200' : 'bg-gray-200'
+                      }`}>
+                        <span className="text-xs font-medium text-gray-700">
+                          {message.user.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -147,23 +206,45 @@ const DirectMessageChat: React.FC<DirectMessageChatProps> = ({
       </div>
 
       <div className="bg-white border-t border-gray-200 p-4">
-        <form onSubmit={handleSendMessage} className="flex space-x-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={`Message @${otherUser?.username}`}
-            className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            disabled={isLoading}
-          />
+        <form onSubmit={handleSendMessage} className="flex items-end">
+          <div className="flex-1 bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+            <textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder={`Message @${otherUser?.username}`}
+              className="w-full px-4 py-3 resize-none focus:outline-none text-sm max-h-32"
+              rows={1}
+              required
+            />
+          </div>
           <button
             type="submit"
-            className="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            disabled={!newMessage.trim() || isLoading}
+            disabled={isLoading || !newMessage.trim()}
+            className={`ml-3 inline-flex items-center justify-center h-11 w-11 rounded-full ${
+              newMessage.trim() 
+                ? 'bg-indigo-500 hover:bg-indigo-600 text-white' 
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            } transition-colors duration-200 flex-shrink-0`}
           >
-            Send
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+            </svg>
           </button>
         </form>
+        <div className="mt-2 text-xs text-gray-500 flex justify-between">
+          <div className="flex items-center">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+              isConnected 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              <span className={`flex-shrink-0 w-2 h-2 rounded-full mr-1 ${
+                isConnected ? 'bg-green-400' : 'bg-yellow-400'
+              }`}></span>
+              <span>{isConnected ? 'Connected' : 'Offline'}</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
