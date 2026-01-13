@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { api, Message, DirectMessageConversation } from '@/services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { api, DirectMessageConversation, Message } from '@/services/api';
 import { useSocket } from './useSocket';
 
 export const useDirectMessages = () => {
@@ -7,116 +7,112 @@ export const useDirectMessages = () => {
   const [activeConversation, setActiveConversation] = useState<DirectMessageConversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { joinDirectMessages, sendMessage, subscribeToReceiveDirectMessage, isConnected } = useSocket();
 
-  const { 
-    sendMessage: sendSocketMessage, 
-    subscribeToReceiveDirectMessage, 
-    subscribeToMessageSent,
-    subscribeToErrors,
-    isConnected,
-    joinDirectMessages
-  } = useSocket();
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const result = await api.getDirectMessageConversations();
-    if (result.error) {
-      setError(result.error);
-      console.error('Error fetching direct message conversations:', result.error);
-    } else {
-      setConversations(result.data.conversations);
+    
+    try {
+      const result = await api.getDirectMessageConversations();
+      
+      if (result.error) {
+        setError(result.error);
+        setConversations([]);
+      } else {
+        setConversations(result.data.conversations);
+        
+        const userIds = result.data.conversations.flatMap(conv => 
+          conv.participants.map(p => p.id)
+        );
+        if (userIds.length > 0) {
+          joinDirectMessages(userIds);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setConversations([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  };
+  }, [joinDirectMessages]);
 
-  const loadMessages = async (conversationId: string) => {
-    setIsLoading(true);
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const loadMessages = useCallback(async (conversationId: string) => {
+    setIsMessagesLoading(true);
     setError(null);
-    const result = await api.getDirectMessages(conversationId);
-    if (result.error) {
-      setError(result.error);
-      console.error('Error fetching direct messages:', result.error);
-    } else {
-      setMessages(result.data.messages.reverse());
+    
+    try {
+      const result = await api.getDirectMessages(conversationId);
+      
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setMessages(result.data.messages);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setMessages([]);
+    } finally {
+      setIsMessagesLoading(false);
     }
-    setIsLoading(false);
-  };
+  }, []);
 
-  const setActiveConversationWithId = (conversationId: string) => {
+  const setActiveConversationWithId = useCallback((conversationId: string) => {
     const conversation = conversations.find(conv => conv.id === conversationId);
     if (conversation) {
       setActiveConversation(conversation);
       loadMessages(conversationId);
+      return conversation;
     }
-  };
+    return null;
+  }, [conversations, loadMessages]);
 
-  const sendDirectMessage = async (content: string, recipientId: string) => {
-    setError(null);
-    
-    if (isConnected) {
-      sendSocketMessage({ content, recipientId });
-      return true;
-    } else {
+  const sendDirectMessage = useCallback(async (content: string, recipientId: string) => {
+    try {
       const result = await api.sendDirectMessage(content, recipientId);
+      
       if (result.error) {
         setError(result.error);
-        console.error('Error sending direct message:', result.error);
         return false;
-      } else {
-        setMessages(prev => [...prev, result.data]);
-        return true;
       }
+      
+      setMessages(prev => [...prev, result.data]);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+      return false;
     }
-  };
-
-  useEffect(() => {
-    loadConversations();
   }, []);
 
   useEffect(() => {
-    const receiveDirectMessageCallback = (data: Message) => {
-      if (activeConversation && data.spaceId === activeConversation.id) {
-        setMessages(prev => [...prev, data]);
-      }
-    };
+    if (activeConversation) {
+      const handleNewMessage = (message: Message) => {
+        setMessages(prev => [...prev, message]);
+      };
 
-    const messageSentCallback = (data: Message) => {
-      if (activeConversation && data.spaceId === activeConversation.id) {
-        setMessages(prev => [...prev, data]);
-      }
-    };
+      subscribeToReceiveDirectMessage(handleNewMessage);
 
-    const errorCallback = (error: { message: string }) => {
-      setError(error.message);
-    };
-
-    subscribeToReceiveDirectMessage(receiveDirectMessageCallback);
-    subscribeToMessageSent(messageSentCallback);
-    subscribeToErrors(errorCallback);
-
-    return () => {
-      setError(null);
-    };
-  }, [activeConversation]);
-
-  useEffect(() => {
-    if (isConnected && activeConversation) {
-      joinDirectMessages([activeConversation.otherUser?.id || '']);
+      return () => {
+      };
     }
-  }, [isConnected, activeConversation]);
+  }, [activeConversation, subscribeToReceiveDirectMessage]);
 
   return {
     conversations,
     activeConversation,
     messages,
     isLoading,
+    isMessagesLoading,
     error,
+    isConnected,
     loadConversations,
-    loadMessages,
     setActiveConversationWithId,
     sendDirectMessage,
-    isConnected,
   };
 };

@@ -1,5 +1,19 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+const apiCache = new Map();
+const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+const cleanupCache = () => {
+  const now = Date.now();
+  for (const [key, value] of apiCache.entries()) {
+    if (now - value.timestamp > CACHE_TIMEOUT) {
+      apiCache.delete(key);
+    }
+  }
+};
+
+setInterval(cleanupCache, 60 * 1000);
+
 export interface Message {
   id: string;
   content: string;
@@ -45,11 +59,24 @@ export interface ApiResponse<T> {
 export const api = {
   async getMessages(spaceId: string = 'general'): Promise<ApiResponse<{ messages: Message[] }>> {
     try {
+      const cacheKey = `messages_${spaceId}`;
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < CACHE_TIMEOUT) {
+        return { data: cached.data };
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/messages?space=${spaceId}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      
+      apiCache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
       return { data };
     } catch (error) {
       return { data: { messages: [] }, error: (error as Error).message };
@@ -57,6 +84,8 @@ export const api = {
   },
 
   async sendMessage(content: string, spaceId: string = 'general'): Promise<ApiResponse<Message>> {
+    apiCache.delete(`messages_${spaceId}`);
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/messages`, {
         method: 'POST',
@@ -102,6 +131,13 @@ export const api = {
 
   async getDirectMessageConversations(): Promise<ApiResponse<{ conversations: DirectMessageConversation[] }>> {
     try {
+      const cacheKey = 'direct_conversations';
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < CACHE_TIMEOUT) {
+        return { data: cached.data };
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/direct-messages/conversations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -111,6 +147,12 @@ export const api = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      
+      apiCache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
       return { data };
     } catch (error) {
       return { data: { conversations: [] }, error: (error as Error).message };
@@ -119,6 +161,13 @@ export const api = {
 
   async getDirectMessages(conversationId: string): Promise<ApiResponse<{ messages: Message[] }>> {
     try {
+      const cacheKey = `direct_messages_${conversationId}`;
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < CACHE_TIMEOUT) {
+        return { data: cached.data };
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/direct-messages/${conversationId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -128,6 +177,12 @@ export const api = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      
+      apiCache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
       return { data };
     } catch (error) {
       return { data: { messages: [] }, error: (error as Error).message };
@@ -300,6 +355,13 @@ export const api = {
   
   async getSpaces(): Promise<ApiResponse<{ spaces: Space[] }>> {
     try {
+      const cacheKey = 'spaces';
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < CACHE_TIMEOUT) {
+        return { data: cached.data };
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/spaces`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -309,6 +371,12 @@ export const api = {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      
+      apiCache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
       return { data };
     } catch (error) {
       return { data: { spaces: [] }, error: (error as Error).message };
@@ -316,6 +384,8 @@ export const api = {
   },
   
   async createSpace(name: string, description?: string, type?: string): Promise<ApiResponse<Space>> {
+    apiCache.delete('spaces');
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/spaces`, {
         method: 'POST',
@@ -351,6 +421,40 @@ export const api = {
       return { data };
     } catch (error) {
       return { data: { users: [] }, error: (error as Error).message };
+    }
+  },
+
+  async createUser(username: string, email: string, password: string): Promise<ApiResponse<User>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return { data: data.user }; 
+    } catch (error) {
+      return { 
+        data: { 
+          id: '', 
+          username: '', 
+          email: '', 
+          role: 'user', 
+          isActive: false, 
+          lastSeen: '', 
+          createdAt: '', 
+          updatedAt: '' 
+        }, 
+        error: (error as Error).message 
+      };
     }
   },
 
@@ -409,7 +513,6 @@ export const api = {
       return { data: { users: [] }, error: (error as Error).message };
     }
   }
-
 };
 
 export interface Space {

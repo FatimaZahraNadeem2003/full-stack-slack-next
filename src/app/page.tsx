@@ -1,12 +1,24 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import Chat from '@/components/Chat';
+import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
 import NotificationDropdown from '@/components/NotificationDropdown';
+import { useEffect } from 'react';
 
 export default function Home() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/user');
+      }
+    }
+  }, [user, router]);
 
   if (isLoading) {
     return (
@@ -29,20 +41,10 @@ export default function Home() {
             </div>
             <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Welcome to Slack  .</h1>
             <Login />
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">Don't have an account?</p>
-              <button 
-                onClick={() => document.getElementById('register-tab')?.click()}
-                className="text-indigo-600 hover:text-indigo-500 font-medium"
-              >
-                Register here
-              </button>
-            </div>
+           
           </div>
         </div>
-      ) : (
-        <Chat />
-      )}
+      ) : null}
     </div>
   );
 }
