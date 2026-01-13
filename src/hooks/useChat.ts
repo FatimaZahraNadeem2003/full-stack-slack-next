@@ -1,142 +1,99 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api, Message } from '@/services/api';
 import { useSocket } from './useSocket';
 
-export const useChat = (spaceId: string = 'general', isDirectMessage: boolean = false) => {
+export const useChat = (spaceId: string, isDirectMessage: boolean = false) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
   const { 
-    sendMessage: sendSocketMessage, 
     subscribeToReceiveMessage, 
-    subscribeToMessageSent,
-    subscribeToErrors,
-    isConnected,
-    joinSpaces,
-    subscribeToReceiveDirectMessage
+    subscribeToReceiveDirectMessage, 
+    sendMessage: sendSocketMessage, 
+    isConnected 
   } = useSocket();
 
   useEffect(() => {
-    loadMessages();
-  }, [spaceId]);
-
-  const loadMessages = async () => {
+    let isMounted = true;
     setIsLoading(true);
-    setError(null);
-    let result;
     
-    if (isDirectMessage) {
-      result = await api.getDirectMessages(spaceId);
-    } else {
-      result = await api.getMessages(spaceId); 
-    }
-    
-    if (result.error) {
-      setError(result.error);
-      console.error('Error fetching messages:', result.error);
-    } else {
-      setMessages(result.data.messages.reverse()); 
-    }
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    if (isConnected && spaceId) {
-      if (isDirectMessage) {
-      } else {
-        joinSpaces([spaceId]);
-      }
-    }
-  }, [isConnected, spaceId, isDirectMessage]);
-
-  useEffect(() => {
-    const receiveMessageCallback = (data: Message) => {
-      if (data.spaceId === spaceId) {
-        setMessages(prev => [...prev, data]);
+    const fetchMessages = async () => {
+      try {
+        let result;
+        if (isDirectMessage) {
+          result = await api.getDirectMessages(spaceId);
+        } else {
+          result = await api.getMessages(spaceId);
+        }
+        
+        if (result.error) {
+          setError(result.error);
+          setMessages([]);
+        } else {
+          const fetchedMessages = result.data.messages.reverse();
+          if (isMounted) {
+            setMessages(fetchedMessages);
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'An error occurred');
+          setMessages([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    const messageSentCallback = (data: Message) => {
-      if (data.spaceId === spaceId) {
-        setMessages(prev => [...prev, data]);
-      }
-    };
-
-    const errorCallback = (error: { message: string }) => {
-      setError(error.message);
-    };
-
-    if (isDirectMessage) {
-      subscribeToReceiveDirectMessage(receiveMessageCallback);
-    } else {
-      subscribeToReceiveMessage(receiveMessageCallback);
-    }
-    
-    subscribeToMessageSent(messageSentCallback);
-    subscribeToErrors(errorCallback);
+    fetchMessages();
 
     return () => {
-      setError(null);
+      isMounted = false;
     };
   }, [spaceId, isDirectMessage]);
 
-  const sendMessage = async (content: string) => {
-    setError(null);
-    
-    if (isConnected) {
+  useEffect(() => {
+    const handleMessage = (message: Message) => {
+      setMessages(prev => [...prev, message]);
+    };
+
+    if (isDirectMessage) {
+      subscribeToReceiveDirectMessage(handleMessage);
+    } else {
+      subscribeToReceiveMessage(handleMessage);
+    }
+  }, [subscribeToReceiveMessage, subscribeToReceiveDirectMessage, isDirectMessage]);
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim()) return false;
+
+    try {
+      let result;
       if (isDirectMessage) {
-        sendSocketMessage({ content, spaceId });
+       
+        result = await api.sendDirectMessage(content, ""); 
       } else {
-        sendSocketMessage({ content, spaceId });
+        result = await api.sendMessage(content, spaceId);
+      }
+
+      if (result.error) {
+        setError(result.error);
+        return false;
       }
       return true;
-    } else {
-      let result;
-      
-      if (isDirectMessage) {
-        result = await api.sendMessage(content, spaceId);
-      } else {
-        result = await api.sendMessage(content, spaceId);
-      }
-      
-      if (result.error) {
-        setError(result.error);
-        console.error('Error sending message:', result.error);
-        return false;
-      } else {
-        setMessages(prev => [...prev, result.data]);
-        return true;
-      }
-    }
-  };
-
-  const joinSpace = async (targetSpaceId: string) => {
-    setError(null);
-    try {
-      const result = await api.joinSpace(targetSpaceId);
-      if (result.error) {
-        setError(result.error);
-        console.error('Error joining space:', result.error);
-        return false;
-      } else {
-        console.log('Successfully joined space:', result.data.message);
-        return true;
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error joining space:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send message');
       return false;
     }
-  };
+  }, [spaceId, isDirectMessage]);
 
   return {
     messages,
     isLoading,
     error,
-    loadMessages,
     sendMessage,
     isConnected,
-    joinSpace,
   };
 };

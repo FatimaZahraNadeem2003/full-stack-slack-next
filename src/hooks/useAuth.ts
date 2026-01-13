@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiClient } from './apiClient';
 
 interface User {
@@ -6,6 +7,10 @@ interface User {
   username: string;
   email: string;
   role?: 'admin' | 'user';
+  isActive?: boolean;
+  lastSeen?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const isBrowser = () => typeof window !== 'undefined';
@@ -14,11 +19,11 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const initializeAuth = async () => {
       if (!isBrowser()) {
-        // If we're on the server, skip initialization
         setIsLoading(false);
         return;
       }
@@ -26,13 +31,19 @@ export const useAuth = () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const storedUser = localStorage.getItem('user');
-          if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
+          const response = await apiClient.get('/auth/verify');
+          if (response.data.valid) {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              setUser(parsedUser);
+            }
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
           }
         } catch (err) {
-          console.error('Error initializing auth:', err);
+          console.error('Error validating token:', err);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
         }
@@ -43,7 +54,7 @@ export const useAuth = () => {
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     if (!isBrowser()) {
       setError('Authentication is only available in the browser');
       return { success: false, error: 'Authentication is only available in the browser' };
@@ -59,6 +70,12 @@ export const useAuth = () => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       setUser(response.data.user);
 
+      if (response.data.user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/user');
+      }
+      
       return { success: true, user: response.data.user };
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';
@@ -67,9 +84,9 @@ export const useAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = useCallback(async (username: string, email: string, password: string) => {
     if (!isBrowser()) {
       setError('Authentication is only available in the browser');
       return { success: false, error: 'Authentication is only available in the browser' };
@@ -79,21 +96,22 @@ export const useAuth = () => {
     setError(null);
 
     try {
-      const adminCheck = await apiClient.get('/auth/check-admin');
-      
-      if (adminCheck.data.hasAdmin) {
-        throw new Error('An admin account already exists. Registration is closed.');
-      }
-
-      const response = await apiClient.post('/auth/register', { 
+     
+      const response = await apiClient.post('/auth/register', {   
         username, 
         email, 
-        password 
+        password
       });
 
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       setUser(response.data.user);
+
+      if (response.data.user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/user');
+      }
 
       return { success: true, user: response.data.user };
     } catch (err: any) {
@@ -103,17 +121,18 @@ export const useAuth = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     if (isBrowser()) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     }
     setUser(null);
-  };
+    router.push('/');
+  }, [router]);
 
-  return {
+  return useMemo(() => ({
     user,
     isLoading,
     error,
@@ -123,5 +142,5 @@ export const useAuth = () => {
     isAuthenticated: !!user,
     token: isBrowser() ? localStorage.getItem('token') : null,
     isAdmin: user?.role === 'admin',
-  };
+  }), [user, isLoading, error, login, register, logout]);
 };

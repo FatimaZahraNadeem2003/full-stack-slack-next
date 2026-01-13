@@ -57,10 +57,10 @@ const AdminDashboard = () => {
           <h2 className="text-xl font-bold text-red-600 mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-6">You must be an admin to access this page.</p>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = user?.role === 'user' ? '/user' : '/'}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
-            Go Home
+            Go {user?.role === 'user' ? 'To User Dashboard' : 'Home'}
           </button>
         </div>
       </div>

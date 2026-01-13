@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/hooks/apiClient';
 import RegistrationLoading from './RegistrationLoading';
-import RegistrationClosed from './RegistrationClosed';
 import RegistrationForm from './RegistrationForm';
 
 const Register = () => {
@@ -15,9 +15,8 @@ const Register = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/check-admin');
-        const data = await response.json();
-        setAdminExists(data.hasAdmin);
+        const response = await apiClient.get('/auth/check-admin');
+        setAdminExists(response.data.hasAdmin);
       } catch (err) {
         console.error('Error checking admin status:', err);
         setAdminExists(true);
@@ -38,22 +37,29 @@ const Register = () => {
     return <RegistrationLoading />;
   }
 
-  if (adminExists) {
-    return <RegistrationClosed />;
-  }
-
   return (
-    <RegistrationForm
-      username={username}
-      setUsername={setUsername}
-      email={email}
-      setEmail={setEmail}
-      password={password}
-      setPassword={setPassword}
-      error={error}
-      isLoading={isLoading}
-      handleSubmit={handleSubmit}
-    />
+    <div>
+      {adminExists && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg shadow-lg max-w-md text-center">
+            <div className="flex items-center justify-center">
+              
+            </div>
+          </div>
+        </div>
+      )}
+      <RegistrationForm
+        username={username}
+        setUsername={setUsername}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        error={error}
+        isLoading={isLoading}
+        handleSubmit={handleSubmit}
+      />
+    </div>
   );
 };
 
