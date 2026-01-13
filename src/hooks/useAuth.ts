@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from './apiClient';
+import { broadcastLogout } from '@/utils/authUtils';
 
 interface User {
   id: string;
@@ -14,6 +15,17 @@ interface User {
 }
 
 const isBrowser = () => typeof window !== 'undefined';
+
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return true;
+  }
+};
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -29,7 +41,7 @@ export const useAuth = () => {
       }
       
       const token = localStorage.getItem('token');
-      if (token) {
+      if (token && !isTokenExpired(token)) {
         try {
           const response = await apiClient.get('/auth/verify');
           if (response.data.valid) {
@@ -125,8 +137,7 @@ export const useAuth = () => {
 
   const logout = useCallback(() => {
     if (isBrowser()) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      broadcastLogout();
     }
     setUser(null);
     router.push('/');

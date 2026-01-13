@@ -10,8 +10,6 @@ const ChatPage = () => {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  // No need to redirect here since the ProtectedRoute and other components handle it
-  // If user is admin, they should have been redirected elsewhere already
 
   if (isLoading) {
     return (
@@ -24,7 +22,6 @@ const ChatPage = () => {
     );
   }
 
-  // If user is admin, redirect to admin dashboard
   if (user && user.role === 'admin') {
     useEffect(() => {
       router.push('/admin');
