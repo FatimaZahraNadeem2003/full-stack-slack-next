@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ReactNode } from 'react';
+import CrossTabAuthListener from './CrossTabAuthListener';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -19,7 +20,6 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireUser = false }:
     if (!isLoading && !user) {
       router.push('/');
     } 
-    // Only handle role-based redirects for specific protected routes
     else if (!isLoading && user) {
       if (requireAdmin && user.role !== 'admin') {
         router.push('/');
@@ -76,7 +76,12 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireUser = false }:
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <CrossTabAuthListener />
+      <>{children}</>
+    </>
+  );
 };
 
 export default ProtectedRoute;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import { useEffect } from 'react';
+import CrossTabAuthListener from '@/components/CrossTabAuthListener';
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -32,19 +33,22 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
-      {!user ? (
-        <div className="container mx-auto px-4 py-8 max-w-md">
-          <div className="bg-white rounded-xl shadow-md p-8">
-            <div className="flex justify-end mb-4">
-              <NotificationDropdown />
+    <>
+      <CrossTabAuthListener />
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+        {!user ? (
+          <div className="container mx-auto px-4 py-8 max-w-md">
+            <div className="bg-white rounded-xl shadow-md p-8">
+              <div className="flex justify-end mb-4">
+                <NotificationDropdown />
+              </div>
+              <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Welcome to Slack  .</h1>
+              <Login />
+             
             </div>
-            <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Welcome to Slack  .</h1>
-            <Login />
-           
           </div>
-        </div>
-      ) : null}
-    </div>
+        ) : null}
+      </div>
+    </>
   );
 }

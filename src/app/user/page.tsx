@@ -18,7 +18,6 @@ const UserDashboard = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      // If user is admin, redirect to admin dashboard
       if (user.role === 'admin') {
         router.push('/admin');
         return;
@@ -26,7 +25,6 @@ const UserDashboard = () => {
       
       loadUserData();
     } else if (!authLoading && !user) {
-      // If user is not authenticated, redirect to login
       router.push('/');
     }
   }, [user, authLoading, router]);
@@ -51,7 +49,6 @@ const UserDashboard = () => {
     }
   };
 
-  // Show loading state while auth is loading
   if (authLoading || (!user && !authLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -63,7 +60,6 @@ const UserDashboard = () => {
     );
   }
 
-  // If user is admin, show redirect message (this shouldn't happen due to redirect above)
   if (user && user.role === 'admin') {
     useEffect(() => {
       router.push('/admin');
@@ -80,7 +76,6 @@ const UserDashboard = () => {
     );
   }
 
-  // Loading state for user data
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
