@@ -37,14 +37,14 @@ const DirectMessageSidebar: React.FC<DirectMessageSidebarProps> = ({
   };
 
   return (
-    <div className="bg-white border-r border-gray-200 w-80 flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Direct Messages</h2>
+    <div className="bg-gradient-to-b from-white to-indigo-50/30 backdrop-blur-sm border-r border-white/20 w-80 flex flex-col shadow-lg">
+      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <h2 className="text-xl font-bold text-gray-800 gradient-text">Direct Messages</h2>
         <div className="mt-3">
           <input
             type="text"
             placeholder="Search conversations..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border border-gray-300/50 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -53,36 +53,37 @@ const DirectMessageSidebar: React.FC<DirectMessageSidebarProps> = ({
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="p-4 text-center text-gray-500">Loading conversations...</div>
+          <div className="p-4 text-center text-gray-500 animate-pulse">Loading conversations...</div>
         ) : error ? (
-          <div className="p-4 text-center text-red-500">{error}</div>
+          <div className="p-4 text-center text-red-500 bg-red-50 rounded-lg m-4 animate-shake">{error}</div>
         ) : filteredConversations.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">No direct message conversations found</div>
+          <div className="p-4 text-center text-gray-500 animate-float">No direct message conversations found</div>
         ) : (
-          <ul className="divide-y divide-gray-200">
-            {filteredConversations.map(conversation => {
+          <ul className="divide-y divide-gray-100/50">
+            {filteredConversations.map((conversation, index) => {
               const otherUser = conversation.otherUser;
               if (!otherUser) return null;
               
               return (
                 <li 
                   key={conversation.id}
-                  className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                    activeConversationId === conversation.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : ''
+                  className={`p-4 hover:bg-indigo-100/50 cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
+                    activeConversationId === conversation.id ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-l-4 border-indigo-500 shadow-md' : ''
                   }`}
                   onClick={() => onSelectConversation(conversation.id)}
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <span className="text-sm font-medium text-indigo-600">
+                  <div className="flex items-center animate-fade-in-left">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center shadow-md">
+                      <span className="text-sm font-bold text-indigo-600">
                         {getInitials(otherUser.username)}
                       </span>
                     </div>
                     <div className="ml-3 min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-semibold text-gray-800 truncate">
                         {otherUser.username}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-gray-600 truncate">
                         {conversation.type === 'direct' ? 'Direct message' : conversation.spaceName}
                       </p>
                     </div>
@@ -94,20 +95,20 @@ const DirectMessageSidebar: React.FC<DirectMessageSidebarProps> = ({
         )}
       </div>
 
-      <div className="p-4 border-t border-gray-200">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Online</h3>
+      <div className="p-4 border-t border-white/20 bg-gradient-to-r from-indigo-50/30 to-purple-50/30 animate-slide-in">
+        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2.5">Online</h3>
         <div className="space-y-2">
           {conversations
             .filter(conv => conv.otherUser && conv.otherUser.id !== currentUser?.id)
             .slice(0, 5)
-            .map(conv => {
+            .map((conv, index) => {
               if (!conv.otherUser) return null;
               return (
-                <div key={conv.otherUser.id} className="flex items-center">
-                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-xs text-green-800">●</span>
+                <div key={conv.otherUser.id} className="flex items-center animate-fade-in-left" style={{ animationDelay: `${index * 60}ms` }}>
+                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 flex items-center justify-center shadow-sm">
+                    <span className="text-xs text-white">●</span>
                   </div>
-                  <span className="ml-2 text-sm text-gray-700">{conv.otherUser.username}</span>
+                  <span className="ml-2.5 text-sm text-gray-700 font-medium">{conv.otherUser.username}</span>
                 </div>
               );
             })}

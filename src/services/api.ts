@@ -1,7 +1,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const apiCache = new Map();
-const CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const CACHE_TIMEOUT = 5 * 60 * 1000; 
 
 const cleanupCache = () => {
   const now = Date.now();

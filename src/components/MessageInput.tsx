@@ -25,15 +25,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="border-t border-gray-200 p-4 bg-white">
-      <form onSubmit={handleSendMessage} className="flex items-end">
-        <div className="flex-1 bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+    <div className="border-t border-white/20 p-4 bg-white/80 backdrop-blur-sm shadow-lg">
+      <form onSubmit={handleSendMessage} className="flex items-end transition-all duration-300">
+        <div className="flex-1 bg-white/70 backdrop-blur-sm border border-gray-300/50 rounded-xl shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all duration-300">
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleSubmit}
             placeholder="Type a message..."
-            className="w-full px-4 py-3 resize-none focus:outline-none text-sm max-h-32"
+            className="w-full px-4 py-3 resize-none focus:outline-none text-sm max-h-32 bg-transparent transition-all duration-300 placeholder:text-gray-400"
             rows={1}
             required
           />
@@ -41,32 +41,32 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <button
           type="submit"
           disabled={isLoading || !newMessage.trim()}
-          className={`ml-3 inline-flex items-center justify-center h-11 w-11 rounded-full ${
+          className={`ml-3 inline-flex items-center justify-center h-12 w-12 rounded-full transition-all duration-300 flex-shrink-0 transform hover:scale-110 ${
             newMessage.trim() 
-              ? 'bg-indigo-500 hover:bg-indigo-600 text-white' 
+              ? 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl' 
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          } transition-colors duration-200 flex-shrink-0`}
+          }`}
         >
           <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
           </svg>
         </button>
       </form>
-      <div className="mt-2 text-xs text-gray-500 flex justify-between">
+      <div className="mt-2 text-xs text-gray-500 flex justify-between transition-all duration-300">
         <div className="flex items-center">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-300 ${
             isConnected 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-yellow-100 text-yellow-800'
+              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800' 
+              : 'bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800'
           }`}>
-            <span className={`flex-shrink-0 w-2 h-2 rounded-full mr-1 ${
-              isConnected ? 'bg-green-400' : 'bg-yellow-400'
+            <span className={`flex-shrink-0 w-2 h-2 rounded-full mr-1.5 transition-all duration-300 ${
+              isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
             }`}></span>
             <span>{isConnected ? 'Connected' : 'Offline'}</span>
           </span>
-          <span className="ml-2">Press Enter to send</span>
+          <span className="ml-2.5 transition-colors duration-300">Press Enter to send</span>
         </div>
-        <span>{messageCount} messages</span>
+        <span className="transition-colors duration-300">{messageCount} messages</span>
       </div>
     </div>
   );

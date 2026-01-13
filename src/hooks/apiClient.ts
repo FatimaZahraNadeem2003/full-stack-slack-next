@@ -59,11 +59,19 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      // Remove token and user data from localStorage when unauthorized
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
+      // Also clear any potential cached data
+      cache.clear();
+      
+      // Optionally redirect to login page
       if (typeof window !== 'undefined') {
-        window.location.href = '/';
+        // Check if we're on a page that requires auth, if so redirect to login
+        if (window.location.pathname !== '/' && !window.location.pathname.startsWith('/register')) {
+          window.location.href = '/';
+        }
       }
     }
     return Promise.reject(error);
