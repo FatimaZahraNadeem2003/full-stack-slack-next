@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Slack Clone",
-  description: "A full-stack Slack clone with persistent login functionality",
+  title: "Slack",
+  description: "A full-stack Slack with persistent login functionality",
 };
 
 export default function RootLayout({

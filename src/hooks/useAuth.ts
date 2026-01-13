@@ -16,6 +16,7 @@ interface User {
 
 const isBrowser = () => typeof window !== 'undefined';
 
+// Helper function to decode JWT token and check expiration
 const isTokenExpired = (token: string): boolean => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -51,13 +52,20 @@ export const useAuth = () => {
               setUser(parsedUser);
             }
           } else {
+            // Token is invalid, remove it
             localStorage.removeItem('token');
             localStorage.removeItem('user');
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error validating token:', err);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          // If the error is specifically about token verification, remove the token
+          if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
         }
       }
       setIsLoading(false);
@@ -78,6 +86,7 @@ export const useAuth = () => {
     try {
       const response = await apiClient.post('/auth/', { email, password });
 
+      // Store token and user data in localStorage for persistent login
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       setUser(response.data.user);
@@ -108,13 +117,14 @@ export const useAuth = () => {
     setError(null);
 
     try {
-     
+      
       const response = await apiClient.post('/auth/register', {   
         username, 
         email, 
         password
       });
 
+      // Store token and user data in localStorage for persistent login
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       setUser(response.data.user);
